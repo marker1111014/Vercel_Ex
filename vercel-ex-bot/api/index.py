@@ -2,19 +2,15 @@ import os
 import requests
 from flask import Flask, request
 
-# --- 環境變數與常數 ---
-# Vercel 會從你設定的 "Environment Variables" 讀取
+# 從環境變數讀取你的 Bot Token
 TOKEN = os.environ.get('TELEGRAM_TOKEN')
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
+# 要替換的網域
 TARGET_DOMAIN = "https://exhentai.org/g/"
 REPLACE_DOMAIN = "https://ex.nmbyd3.top/g/"
 
-
-# --- Flask 應用程式實例 ---
-# Vercel 需要這個 'app' 變數，且必須在全域範圍 (不能縮排)
 app = Flask(__name__)
-
 
 def send_reply(chat_id, text):
     """發送訊息回 Telegram"""
@@ -27,8 +23,6 @@ def send_reply(chat_id, text):
     except Exception as e:
         print(f"Error sending message: {e}")
 
-# --- Webhook 路由 ---
-# 這是 Vercel Function 的進入點
 @app.route('/', methods=['POST'])
 def webhook():
     """
@@ -58,5 +52,6 @@ def webhook():
     # 必須回傳 200 OK，告知 Telegram 已成功接收
     return 'OK', 200
 
-# 注意：Vercel 會忽略 if __name__ == "__main__": 區塊
-# 所以 app.run() 不會在這裡執行，這是正常的
+if __name__ == "__main__":
+    # 這段是為了方便本地測試，Vercel 不會執行
+    app.run(debug=True)

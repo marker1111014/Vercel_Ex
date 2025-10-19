@@ -1,6 +1,7 @@
 import os
 import requests
 from flask import Flask, request
+import time  # <--- 1. 匯入 time 模組
 
 # 從環境變數讀取你的 Bot Token
 TOKEN = os.environ.get('TELEGRAM_TOKEN')
@@ -40,14 +41,30 @@ def webhook():
             # 檢查是否包含目標網域
             if TARGET_DOMAIN in message_text:
                 # 執行替換
-                new_text = message_text.replace(TARGET_DOMAIN, REPLACE_DOMAIN)
+                converted_url = message_text.replace(TARGET_DOMAIN, REPLACE_DOMAIN)
                 
                 # 根據你的範例，確保結尾有斜線
-                if not new_text.endswith('/'):
-                    new_text += '/'
+                if not converted_url.endswith('/'):
+                    converted_url += '/'
                 
-                # 回傳轉換後的訊息
-                send_reply(chat_id, new_text)
+                # 組合你想要的豐富訊息
+                reply_message = f"""沒有Ex(裡站)帳號的群友可點擊下面的連結看本
+
+{converted_url}
+"""
+                
+                # --- 2. 從這裡開始修改 ---
+                
+                # 延遲 2 秒
+                try:
+                    time.sleep(2)
+                except Exception as e:
+                    print(f"Sleep error: {e}") 
+
+                # 回傳組合後的訊息
+                send_reply(chat_id, reply_message)
+                
+                # --- 修改結束 ---
 
     # 必須回傳 200 OK，告知 Telegram 已成功接收
     return 'OK', 200

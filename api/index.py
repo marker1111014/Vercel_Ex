@@ -48,7 +48,8 @@ def webhook():
                     converted_url += '/'
                 
                 # 組合你想要的豐富訊息
-                reply_message = f"""沒有Ex(裡站)帳號的群友可點擊下面的連結看本
+                reply_message = f"""沒有Ex(裡站)帳號的群友
+可點擊下方的連結看上面的本
 
 {converted_url}
 """
@@ -72,3 +73,4 @@ def webhook():
 if __name__ == "__main__":
     # 這段是為了方便本地測試，Vercel 不會執行
     app.run(debug=True)
+

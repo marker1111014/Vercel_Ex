@@ -38,39 +38,48 @@ def webhook():
             chat_id = data['message']['chat']['id']
             message_text = data['message']['text']
             
-            # 檢查是否包含目標網域
-            if TARGET_DOMAIN in message_text:
-                # 執行替換
-                converted_url = message_text.replace(TARGET_DOMAIN, REPLACE_DOMAIN)
+            # --- 修改開始 ---
+            
+            # 定義 ExHentai 網址的正規表達式格式
+            # 解釋：尋找 https://exhentai.org/g/數字/英數混合/
+            pattern = r"https://exhentai\.org/g/\d+/[a-z0-9]+"
+            
+            # 使用 re.search 搜尋訊息中是否包含符合格式的網址
+            match = re.search(pattern, message_text)
+            
+            if match:
+                # 抓取到的純網址 (例如 https://exhentai.org/g/3710200/f978f40d69)
+                found_url = match.group(0)
                 
-                # 根據你的範例，確保結尾有斜線
+                # 執行網址替換 (只針對抓到的網址進行替換)
+                converted_url = found_url.replace(TARGET_DOMAIN, REPLACE_DOMAIN)
+                
+                # 確保結尾有斜線 (這邏輯保留)
                 if not converted_url.endswith('/'):
                     converted_url += '/'
                 
-                # 組合你想要的豐富訊息
+                # 組合訊息
                 reply_message = f"""沒有Ex(裡站)帳號的群友
 可點擊下方的連結看上面的本
 
 {converted_url}
 """
                 
-                # --- 2. 從這裡開始修改 ---
-                
-                # 延遲 2 秒
+                # 延遲處理
                 try:
                     time.sleep(2)
                 except Exception as e:
                     print(f"Sleep error: {e}") 
 
-                # 回傳組合後的訊息
+                # 發送回覆
                 send_reply(chat_id, reply_message)
                 
-                # --- 修改結束 ---
+            # --- 修改結束 ---
 
-    # 必須回傳 200 OK，告知 Telegram 已成功接收
     return 'OK', 200
 
 if __name__ == "__main__":
     # 這段是為了方便本地測試，Vercel 不會執行
     app.run(debug=True)
+
 

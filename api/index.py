@@ -10,7 +10,7 @@ TELEGRAM_API_URL = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
 # 要替換的網域
 TARGET_DOMAIN = "https://exhentai.org/g/"
-REPLACE_DOMAIN = "https://ex.nmbyd3.top/g/"
+REPLACE_DOMAIN = "https://e.810114.xyz/g/"
 
 app = Flask(__name__)
 

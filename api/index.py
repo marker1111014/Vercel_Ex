@@ -70,7 +70,7 @@ def webhook():
 {eh_url}
 """
                 else:
-                    reply_message = "這是ex站專屬連結"
+                    reply_message = "這是ex站專屬連結，鏡像站目前已掛點"
                 
                 try:
                     time.sleep(2)

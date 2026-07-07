@@ -7,12 +7,14 @@ import time
 TOKEN = os.environ.get('TELEGRAM_TOKEN')
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
-# # 舊的鏡像站取代功能（保留備用）
-# TARGET_DOMAIN = "https://exhentai.org/g/"
-# REPLACE_DOMAIN = "https://e.810114.xyz/g/"
-
 EX_DOMAIN = "https://exhentai.org/g/"
-EH_DOMAIN = "https://e-hentai.org/g/"
+
+# 新增：將所有需要測試的站點與名稱定義在此處，方便日後新增或刪除
+TARGET_DOMAINS = {
+    "E-Hentai (表站)": "https://e-hentai.org/g/",
+    "Moonchan 鏡像": "https://ex.moonchan.xyz/g/",
+    "方立頂 鏡像": "https://ex.fangliding.eu.org/g/"
+}
 
 app = Flask(__name__)
 
@@ -34,9 +36,10 @@ def send_reply(chat_id, text):
 def is_gallery_available(url):
     try:
         resp = SESSION.get(url, timeout=10)
+        # 注意：如果鏡像站設有 Cloudflare 或防爬蟲機制，此處可能會因為返回 403 而誤判為不可用
         return resp.status_code == 200 and 'Gallery not found' not in resp.text
     except Exception as e:
-        print(f"Error checking gallery: {e}")
+        print(f"Error checking gallery on {url}: {e}")
         return False
 
 @app.route('/', methods=['POST'])
@@ -53,24 +56,23 @@ def webhook():
             
             if match:
                 found_url = match.group(0)
-                eh_url = found_url.replace(EX_DOMAIN, EH_DOMAIN)
-                if not eh_url.endswith('/'):
-                    eh_url += '/'
+                available_links = []
                 
-                # # 舊的鏡像站取代邏輯
-                # converted_url = found_url.replace(TARGET_DOMAIN, REPLACE_DOMAIN)
-                # if not converted_url.endswith('/'):
-                #     converted_url += '/'
-                # reply_message = f"""沒有Ex(裡站)帳號的群友\n可點擊下方的連結看上面的本\n\n{converted_url}\n"""
+                # 依序檢查每個站點
+                for name, domain in TARGET_DOMAINS.items():
+                    converted_url = found_url.replace(EX_DOMAIN, domain)
+                    if not converted_url.endswith('/'):
+                        converted_url += '/'
+                    
+                    if is_gallery_available(converted_url):
+                        available_links.append(f"{name}：\n{converted_url}")
                 
-                if is_gallery_available(eh_url):
-                    reply_message = f"""沒有Ex(裡站)帳號的群友
-可點擊下方的連結看上面的本
-
-{eh_url}
-"""
+                # 如果有任何一個站點可用，則回傳可用清單
+                if available_links:
+                    links_text = "\n\n".join(available_links)
+                    reply_message = f"沒有Ex(裡站)帳號的群友\n可點擊下方的連結看上面的本\n\n{links_text}"
                 else:
-                    reply_message = "這是ex站專屬連結，鏡像站目前已掛點"
+                    reply_message = "這是ex站專屬連結，目前測試的表站與鏡像站皆無法存取（可能已掛點或受到防爬蟲阻擋）。"
                 
                 try:
                     time.sleep(2)
@@ -83,6 +85,3 @@ def webhook():
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-
-

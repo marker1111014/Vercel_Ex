@@ -89,7 +89,7 @@ def webhook():
                     reply_message = "這是ex站專屬連結，目前測試的表站與鏡像站皆無法存取（可能已掛點或受到防爬蟲阻擋）。"
                 
                 try:
-                    time.sleep(2)
+                    time.sleep(0)
                 except Exception as e:
                     print(f"Sleep error: {e}")
                 

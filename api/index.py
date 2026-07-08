@@ -1,15 +1,14 @@
 import os
-import requests
 import re
 from flask import Flask, request
 import time
+import httpx  # 完全取代 requests
 
 TOKEN = os.environ.get('TELEGRAM_TOKEN')
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
 EX_DOMAIN = "https://exhentai.org/g/"
 
-# 新增：將所有需要測試的站點與名稱定義在此處，方便日後新增或刪除
 TARGET_DOMAINS = {
     "E-Hentai (表站)": "https://e-hentai.org/g/",
     "Moonchan 鏡像": "https://ex.moonchan.xyz/g/",
@@ -18,9 +17,23 @@ TARGET_DOMAINS = {
 
 app = Flask(__name__)
 
-SESSION = requests.Session()
+# 建立支援 HTTP/2 的 Client 實例
+SESSION = httpx.Client(http2=True)
+
+# 補齊現代瀏覽器（Chrome）的所有必要標頭，降低被 Cloudflare 判定為自動化腳本的機率
 SESSION.headers.update({
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    "Accept-Language": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Cache-Control": "max-age=0",
+    "Sec-Ch-Ua": '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua-Platform": '"Windows"',
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Upgrade-Insecure-Requests": "1"
 })
 
 def send_reply(chat_id, text):
@@ -29,19 +42,19 @@ def send_reply(chat_id, text):
         'text': text
     }
     try:
-        requests.post(TELEGRAM_API_URL, json=payload)
+        # Telegram API 封鎖較不嚴格，直接使用簡配 post 即可
+        httpx.post(TELEGRAM_API_URL, json=payload, timeout=10.0)
     except Exception as e:
         print(f"Error sending message: {e}")
 
 def is_gallery_available(url):
     try:
-        resp = SESSION.get(url, timeout=10)
-        # 新增這行：在後台印出實際收到的 HTTP 狀態碼
+        # 發送請求，此處會自動套用上面設定的 HTTP/2 與瀏覽器標頭
+        resp = SESSION.get(url, timeout=10.0)
         print(f"[Debug] URL: {url} | Status Code: {resp.status_code}")
         
         return resp.status_code == 200 and 'Gallery not found' not in resp.text
     except Exception as e:
-        # 如果發生連線錯誤、SSL 錯誤或連線逾時，會印在這裡
         print(f"Error checking gallery on {url}: {e}")
         return False
 
@@ -61,7 +74,6 @@ def webhook():
                 found_url = match.group(0)
                 available_links = []
                 
-                # 依序檢查每個站點
                 for name, domain in TARGET_DOMAINS.items():
                     converted_url = found_url.replace(EX_DOMAIN, domain)
                     if not converted_url.endswith('/'):
@@ -70,7 +82,6 @@ def webhook():
                     if is_gallery_available(converted_url):
                         available_links.append(f"{name}：\n{converted_url}")
                 
-                # 如果有任何一個站點可用，則回傳可用清單
                 if available_links:
                     links_text = "\n\n".join(available_links)
                     reply_message = f"沒有Ex(裡站)帳號的群友\n可點擊下方的連結看上面的本\n\n{links_text}"

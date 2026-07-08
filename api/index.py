@@ -36,9 +36,12 @@ def send_reply(chat_id, text):
 def is_gallery_available(url):
     try:
         resp = SESSION.get(url, timeout=10)
-        # 注意：如果鏡像站設有 Cloudflare 或防爬蟲機制，此處可能會因為返回 403 而誤判為不可用
+        # 新增這行：在後台印出實際收到的 HTTP 狀態碼
+        print(f"[Debug] URL: {url} | Status Code: {resp.status_code}")
+        
         return resp.status_code == 200 and 'Gallery not found' not in resp.text
     except Exception as e:
+        # 如果發生連線錯誤、SSL 錯誤或連線逾時，會印在這裡
         print(f"Error checking gallery on {url}: {e}")
         return False
 
